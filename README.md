@@ -1,6 +1,8 @@
 todbmanager is a utility to scrape turkopticon into a database, and assist in maintaining that 
 database.
 
+The database provided here is released under the following terms from Turkopticon: "Authorized for personal Mechanical Turk worker use only, at the discretion of TurkOpticon. All other use prohibited without express consent." 
+
 
 At the moment, it only collects from turkopticon.ucsd.edu, it doesn't work for TO 2.0 at 
 turkopticon.info
@@ -46,10 +48,11 @@ parameters. When it prompts you for selections, type them in and press enter.
 Default options will be in parenthesis.
 
 
-~~On first run, it will detect that it doesn't have a database, and ask you if you
-want to download one. The full database is currently on the wiki, this is where
-it will download it from. If you say yes, it will download, unzip and start using
-this database. If you say no, it will start a new one. ~~
+~~On first run, it will detect that it doesn't have a database, and ask you if you~~
+~~want to download one. The full database is currently on the wiki, this is where~~
+~~it will download it from. If you say yes, it will download, unzip and start using~~
+~~this database. If you say no, it will start a new one.~~
+
 This is disabled at the moment. To download the database for use with todbmanager,
 download from the releases area, extract into the directory you download todbmanager,
 and rename the file to: to.db
@@ -145,8 +148,10 @@ If a failure is detected during Run Tests scraping functions may comprimise exis
 
 #### I'm a turkopticon user, I don't want my reviews / comments included
 -Post at https://turkopticon.ucsd.edu/forum/show_post/1813 and state that you do not want your reviews included
+
 -Include a \[NODB\] tag in one of your reviews, just type \[NODB\] anywhere in any one of your reviews,
-you don't have to include it in every one. 
+you don't have to include it in every one.
+
 -Send me an email directly at toutils1@yandex.com, with a link to one of your reviews that include a \[NODB\] tag. 
 
 The blocked userids list will be released along with the source, to indicate to anyone else who wants to maintain a 
