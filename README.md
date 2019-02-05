@@ -54,7 +54,7 @@ Default options will be in parenthesis.
 ~~this database. If you say no, it will start a new one.~~
 
 This is disabled at the moment. To download the database for use with todbmanager,
-download from the releases area, extract into the directory you download todbmanager,
+download from the releases area, extract into the directory you downloaded todbmanager,
 and rename the file to: to.db
 If you've already started todbmanager and it created an empty database, just delete it.
 
