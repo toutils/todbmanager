@@ -12,7 +12,7 @@ This is an early version, and the code may change often. There will likely be bu
 this version succesfully did a full scrape on turkopticon.ucsd.edu without any problems.
 
 
-If your just interested in the database, it's currently available at:
+If your just interested in the database, it's currently available on the releases tab.
 
 
 ## INSTALLATION
