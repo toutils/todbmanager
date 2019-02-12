@@ -32,6 +32,9 @@ mechanize - http://wwwsearch.sourceforge.net/mechanize/
 bs4 - https://www.crummy.com/software/BeautifulSoup/bs4/doc/
 
 
+lxml - https://lxml.de/
+
+
 Detailed installation instructions are big todo, but if your on linux, you should
 have no problems getting this up and running. This hasn't been tested yet on windows
 or osx. 
