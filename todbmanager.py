@@ -118,7 +118,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 		time_start=time.time()
 		rate_limit_wait_time=rate_limit-(time.time()-time_last_request)
 		if rate_limit_wait_time>0:
-			print("rate limit,waiting:"+str(rate_limit_wait_time))
+			print("rate limit,waiting:%.4fs" % (rate_limit_wait_time,))
 			time.sleep(rate_limit_wait_time)
 
 		request_url='reports?page='+str(current_page)
@@ -196,7 +196,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 		print ('----added:'+str(added)+' replaced:'+str(replaced)+' /'+
 			str(len(cleaned_reports))+' comments_modified:'+
 			str(comments_modified)+' from:'+request_url)
-		print('----time: scrape:'+str(time_scrape)+' db:'+str(time_db))
+		print('----time: scrape:%.4fs db:%.4fs' % (time_scrape,time_db))
 
 		total_added+=added
 		total_replaced+=replaced
@@ -216,15 +216,13 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 				log_handler('info','scrape_to',
 				'new total_pages found:'+str(total_pages))
 				page_end=total_pages
-
-		#this will happen when rate limit not exceeded
+s
 		total_wait_time=time.time()-time_start
 
-		print('time total:'+str(total_wait_time)+'s request:'+str(time_request)+
-			's rate_limit:'+str(rate_limit_wait_time)+'s db_time:'+str(time_db))
-		
-		print('pages remaining:'+str(page_end-current_page)+' eta:'+
-			str((page_end-current_page)*(total_wait_time))+'s')
+		print('----time total: %.4fs request: %.4fs rate_limit: %.4fs' % (
+			total_wait_time, time_request, rate_limit_wait_time))
+		print('---pages remaining:'+str(page_end-current_page)+' eta: .4fs',(
+			(page_end-current_page)*(total_wait_time),))
 		
 		current_page+=1
 		
