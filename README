@@ -132,6 +132,10 @@ data is found, using the default orderby modified (useful if the scrape errors
 out for some reason and you want to continue where you left off) 
 $python3 todbmanager.py --pagestart 20 --dontstop
 
+To keep todbmanager alive and updating the database on interval:
+(--autoupdate_interval is optional, default is 300 seconds)
+$python3 todbmanager.py --autoupdate --autoupdate_interval 600
+
 To use another database location 
 $python3 todbmanager.py --dbpath /path/to/database.db 
 (windows) 
