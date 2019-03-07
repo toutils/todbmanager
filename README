@@ -1,0 +1,246 @@
+***v0.3 changes***
+This is a signficant change.
+-Converted to python3
+-Windows support
+-Interactive CLI interface droped in favor of arguments
+-Global requester stats (fair,fast,pay,comm,number of reviews,number of tos
+violations) are tracked in a new table. The stats are updated every time a new
+or modified review is detected for a requester. This is to facilitate a future
+api server, and will be used by todbreader. 
+-Database meta table added (it's only used for db version information at the
+moment)
+-Multiprocessing dropped to simplify code, may be re-added later
+-Significant code cleanup
+
+It is possible to convert your existing database to v0.3, but it is not
+recommended, download the latest database on the release tab. 
+
+To convert to the new database (copy it in and rename to to.db, or use
+--dbpath)
+$python3 todbmanager.py --importdb
+$python3 todbmanager.py --rebuildstats
+
+The possible problem with converting the database is every review will be
+flagged as modified due to a hash mismatch, but during testing this did not
+occur. If you have any problems, download the new database. 
+*****************
+
+todbmanager is a utility to scrape turkopticon into a database, and assist
+in maintaining that database.
+
+The database provided here is released under the following terms from
+Turkopticon: "Authorized for personal Mechanical Turk worker use only, at the
+discretion of TurkOpticon. All other use prohibited without express consent."
+
+At the moment, it only collects from turkopticon.ucsd.edu, it doesn't work
+for TO 2.0 at turkopticon.info
+
+If your just interested in the database, it's currently available on the
+releases tab.
+
+## INSTALLATION 
+todbmanager as of (v0.3) is written for python3, and requires
+a few libraries that aren't part of the standard library. These libraries
+can be installed from your distributions package manager (linux), or with pip.
+
+The non-standard libraries are:
+
+requests - http://docs.python-requests.org/en/master/ 
+bs4 -https://www.crummy.com/software/BeautifulSoup/bs4/doc/ 
+lxml - https://lxml.de/
+
+--Windows 
+If you have python2.7 installed on windows, this may conflict, you may have
+to uninstall python2.7.
+
+Install the latest version of python3 from
+https://www.python.org/downloads/ 
+During installation, make sure "Install for All Users" and "Add to Path" is 
+checked, click custom installation and make sure "Install pip" is checked.
+
+After installation, start an elevated command prompt: start->search for
+program->cmd.exe->right click->Run as administrator
+
+Install the non-standard libraries with
+pip install requests bs4 lxml
+
+Installation should now be complete
+
+--Linux 
+Install python3 and pip from your package manager, and install the
+non-standard libraries with either your package manager or pip. If installing
+from pip, it's recommended not to also install with your package manager,
+and use the --user option with pip
+
+
+## OPERATION
+As of v0.3 there is no longer an interactive command line
+interface. All options are passed as command line arguments (a wrapper could
+be written around this later).
+
+All required scrape options have built in defaults. Defaults are configured
+to run an update scrape (change edit by to modified, scrape until no new data).
+
+To view all options, run
+$python3 todbmanager.py -h
+
+On windows, open the directory you extracted the source/release files too,
+shift + right click on empty space in the folder, and click "Open command
+window here".  Alternatively use windows shell commands to navigate to the
+directory containing todbmanager.py.  
+Run with 
+>python todbmanager.py {insert options here} 
+On windows it's just "python", on linux it's usually "python3".
+
+--Database 
+Todbmanager is designed to keep a downloaded database up to date, without 
+having to do a full scrape yourself. Download the latest compatible
+database from https://github.com/toutils/todbmanager/releases, unzip the
+database into the todbmanager folder (the folder with todbmanager.py)
+and rename the extracted database to to.db (alternatively you can use the
+--dbpath option)
+
+*****
+YOU MUST RUN
+$python3 todbmanager.py --importdb
+
+to use an exported database, (the ones on the release tab are exported).
+If your using --dbpath to point to the database, use it above as well
+$python3 todbmanager.py --importdb --dbpath /path/to/database.db
+*****
+
+Doing a full scrape takes a lot of time (8-12 hours). There won't be a need
+to do a full scrape if you choose to download the database.
+
+If no database is found at the default path (to.db in the same directory
+with todbmanager.py) or if you have specified a database path with dbpath,
+todbmanager will create a new database (at the default location or the
+location specified with dbpath)
+
+--Example operations: 
+To run a fresh scrape, continuing even if no new data is
+found: (if you haven't downloaded a database, it won't stop anyway, all data
+will be new, this is just to highlight the option) 
+$python3 todbmanager.py --orderby creation --dontstop
+
+To start a scrape between page 20 and page 30, continuing even if no new
+data is found, using the default orderby modified 
+$python3 todbmanager.py --pagestart 20 --pageend 30 --dontstop
+
+To start a scrape at page 20 and continue to the end, continuing even if no new
+data is found, using the default orderby modified (useful if the scrape errors
+out for some reason and you want to continue where you left off) 
+$python3 todbmanager.py --pagestart 20 --dontstop
+
+To use another database location 
+$python3 todbmanager.py --dbpath /path/to/database.db 
+(windows) 
+>python todbmanager.py --dbpath "C:\path\to\database.db"
+This is not saved, if you are using a different database location, you must
+specify it with --dbpath every time, otherwise todbmanager will use the default
+to.db (and create it if it doesn't exist)
+
+To facilitate running updates on a task scheduler, you can specify the
+username and password on the command line 
+$python3 todbmanager.py --email email@address.com --password mypassword 
+(use quotes if you have spaces in your password) 
+$python3 todbmanager.py --email email@address.com --password "mypassword"
+
+If you have not specified an email address / password in the options, you
+will be prompted for them.
+
+--The most common operations: 
+Fresh scrape (with a new, not downloaded, database)
+(this was what was used to generate the database on the release tab) 
+$python3 todbmanager.py --orderby creation --dontstop
+
+Update database (default sort by modified, stops when no new data is found)
+$python3 todbmanager.py
+
+Export a database, this drops all indexes and review/comment hashes which can
+be regenerated to reduce the size. This is what the release databases are.
+This will create an export database at export.db in the todbmanager directory
+$python3 todbmanager.py --exportdb
+
+To specify a different export location
+$python3 todbmanager.py --exportdb --exportpath /path/to/export.db
+
+To specify a database path and an export database path
+$python3 todbmanager.py --dbpath /path/to/to.db --exportdb --exportpath /path/to/export.db
+
+##ERROR LOGGING
+todbmanager writes "error.log" in the todbmanager directory, which contains any
+errors, along with some other relevant information (scrape start/end). 
+Depending on the error it might also write "error_last_page.html" and 
+"error_reports.json".
+"error_last_page.html" is the html response from TO the error occured on.
+"error_reports.json" is the output of the scraper. 
+If you want to report a bug, submitting all 3 of these files would be helpful,
+however "error_last_page.html" may contain user information (your username and
+a temporary login session token), and "errors.log" may contain system directory
+information (which might include your system username). 
+
+
+## NOTES
+--I'm a turkopticon user, I don't want my reviews / comments included 
+-Post at https://turkopticon.ucsd.edu/forum/show_post/1813 and state that you do
+not want your reviews included 
+-Include a [NODB] tag in one of your reviews, just type [NODB] anywhere in any 
+one of your reviews, you don't have to include it in every one.  
+-Send me an email directly at toutils1@yandex.com, with a link to one of your 
+reviews that include a [NODB] tag.
+
+The blocked userids list will be released along with the source, to indicate
+to anyone else who wants to maintain a database that these users do not wish
+to be included. The scraper will honor the blocked userids list by default.
+
+It's up to the individual user to decide whether or not they want to respect
+these filtering lists for their own databases.  Databases released here will
+respect the block lists.
+
+--I'm a requester and I don't want the reviews about me included.  
+This is to be determined at the discretion of Turkopticon. Any requesters 
+filtered from the database will have their requester id's included in a 
+blocked requester ids file; which the scraper will honor by default. It's up to 
+the individual user to decide whether or not they want to respect these 
+filtering lists for their own databases. Databases released here will respect 
+the block lists.
+
+--I don't care about block lists, I want all of the review data
+Open block_userids and block_requester_ids, and delete all the content inside of
+the files. (the files must remain at the moment, they can be empty)
+
+--Frequent Code / Database Changes 
+The code is expected to change frequently.  If something stops working check
+back here. The databases now contain a version number in the metadata to
+avoid database version mismatches. If code changes require a new database
+version, the new database will be released along with it.
+
+--Tests/Database Changes 
+There are several test options included (see them with todbmanager -h) These are 
+included for debugging, they should always pass on release code.
+
+--Hidden Reviews 
+todbmanager currently does not scrape for hidden reviews, it may in the future.
+
+--Auto Update and Modified Comments / Hidden Reviews 
+Modified comments do not cause a review to be bumped to the first page when 
+"Toggle by edit date" is set.  New reviews, modified reviews, or reviews with 
+new comments are. This means that auto-update will not be effective to catch all 
+modified comments, the only way to do this is to do a full scrape. It's not 
+known if toggling comments from flag to comment will bump a review to the top. 
+If it doesn't, then it's no different than modified comments. It's also not 
+known if a review gets bumped to the first page when it get's unhidden. If it 
+doesn't, this data may not be captured until the next full scrape.
+
+--Database Updates 
+I plan on releasing monthly updates that have been fully re-scraped (to capture 
+modified comments, and unhidden reviews), and possibly weekly updates that have 
+been kept up to date with auto-update.
+
+--Toggle by Edit/Creation Date 
+Turkopticon stores this setting on the server side. todbmanager will only toggle 
+this to the correct setting once, before a scrape starts. If you login with a 
+normal browser and change this toggle, it will affect the data that todbmanager 
+is getting too. A future update will likely address this, detecting a change 
+every scrape and setting it back to the correct one if it gets changed.

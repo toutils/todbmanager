@@ -1,0 +1,6 @@
+*.pyc
+__pycache__
+errors.log
+*.db
+error_last_page.html
+error_reports.json
