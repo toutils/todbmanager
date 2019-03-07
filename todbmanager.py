@@ -216,13 +216,13 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 				log_handler('info','scrape_to',
 				'new total_pages found:'+str(total_pages))
 				page_end=total_pages
-s
+
 		total_wait_time=time.time()-time_start
 
-		print('----time total: %.4fs request: %.4fs rate_limit: %.4fs' % (
+		print('----time: total:%.4fs request:%.4fs rate_limit:%.4fs' % (
 			total_wait_time, time_request, rate_limit_wait_time))
-		print('---pages remaining:'+str(page_end-current_page)+' eta: .4fs',(
-			(page_end-current_page)*(total_wait_time),))
+		print('----pages remaining:%i eta:%.4fs' %
+			(page_end-current_page,(page_end-current_page)*total_wait_time))
 		
 		current_page+=1
 		
