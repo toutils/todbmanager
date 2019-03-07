@@ -65,9 +65,8 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 
 	try:
 		response=toscraper_fetch(session, to_url, 'reports', timeout)
-		total_pages=toscraper_scrape_total_pages(response.text)
 	except(Exception):
-		log_handler('error','scrape_to','exception trying to_url:'+to_url)
+		log_handler('error','scrape_to','fetch exception url:reports')
 		log_handler('error','scrape_to',traceback.format_exc())
 		return
 		
@@ -75,7 +74,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 		total_pages=toscraper_scrape_total_pages(response.text)
 	except(Exception):
 		log_handler('error','scrape_to','unable to scrape total_pages')
-		log_handler('error','scrape_to','to_url:'+to_url)
+		log_handler('error','scrape_to','url:reports')
 		log_handler('error','scrape_to',traceback.format_exc())
 		try:
 			f=open('error_last_page.html','w')
@@ -126,7 +125,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 		try:
 			response=toscraper_fetch(session, to_url, request_url, timeout)
 		except(Exception):
-			log_handler('error','scrape_to','exception trying to_url:'+to_url)
+			log_handler('error','scrape_to','fetch exception url:'+request_url)
 			log_handler('error','scrape_to',traceback.format_exc())
 			return
 
@@ -138,7 +137,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 			total_pages=toscraper_scrape_total_pages(response.text)
 		except(Exception):
 			log_handler('error','scrape_to','scraping error')
-			log_handler('error','scrape_to','to_url:'+to_url)
+			log_handler('error','scrape_to','url:'+request_url)
 			log_handler('error','scrape_to',traceback.format_exc())
 			try:
 				f=open('error_last_page.html','w')
@@ -163,7 +162,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 				db_result=todb_add_to_table(dbpath,report,log_handler)
 			except(Exception):
 				log_handler('error','scrape_to','database error')
-				log_handler('error','scrape_to','to_url:'+to_url)
+				log_handler('error','scrape_to','url:'+request_url)
 				log_handler('error','scrape_to',traceback.format_exc())
 				try:
 					f=open('error_reports.json','w')
