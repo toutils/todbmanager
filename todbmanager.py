@@ -366,7 +366,7 @@ def main():
 	parser.add_argument("--timeout", type=float, default=60,
 		help="request timeout, defualt: 60" )
 
-	parser.add_argument("--maxretry", type=int, default=10,
+	parser.add_argument("--maxretry", type=int, default=30,
 		help="maximum number of retries after a failed request" )
 
 	parser.add_argument("--test_rehash", action="store_true",
@@ -463,7 +463,7 @@ def main():
 		args.password=getpass("password(hidden):")
 
 	session=Session()
-	session_retries= Retry( total= args.maxretry, backoff_factor=1,
+	session_retries= Retry( total= args.maxretry, backoff_factor=4,
 		status_forcelist=[ 502, 503, 504 ] )
 	session.mount(to_url, HTTPAdapter(max_retries=session_retries) )
 
