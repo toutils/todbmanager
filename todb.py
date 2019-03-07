@@ -53,7 +53,9 @@ def todb_write_meta(dbpath, meta_key, meta_value):
 		cursor.execute("UPDATE meta SET value=? WHERE key=?",(meta_key,
 			meta_value))
 		op='update'
-	conn.commit()
+	#try to prevent issues from interrupt
+	with conn:
+		conn.commit()
 	conn.close()
 	return op
 
@@ -65,7 +67,9 @@ def todb_create_tables(dbpath):
 
 	print ('creating meta table if needed...')
 	cursor.execute("create table if not exists meta (key text, value text)")
-	conn.commit()
+	#try to prevent issues from interrupt
+	with conn:
+		conn.commit()
 
 	#add database meta data, check version first
 	#if key "version" exists at all, it isn't a fresh database, don't add
@@ -136,7 +140,9 @@ def todb_create_tables(dbpath):
 	cursor.execute ("CREATE INDEX IF NOT EXISTS "
 					"todbmanager_comments_user_id_index ON comments (user_id) ")
 	
-	conn.commit()
+	#try to prevent issues from interrupt
+	with conn:
+		conn.commit()
 	conn.close()
 
 def todb_get_table_stats(dbpath):
@@ -179,7 +185,9 @@ def todb_drop_indexes(dbpath):
 		print('dropping '+str(i)+'...')
 		cursor.execute('DROP INDEX '+str(i))
 
-	conn.commit()
+	#try to prevent issues from interrupt
+	with conn:
+		conn.commit()
 	conn.close()
 
 def todb_export_database(dbpath,export_filepath):
@@ -198,14 +206,20 @@ def todb_export_database(dbpath,export_filepath):
 
 	print('setting review_hash to null...')
 	export_cursor.execute('UPDATE reviews SET review_hash=null;')
-	export_conn.commit()
+	#try to prevent issues from interrupt
+	with export_conn:
+		export_conn.commit()
 	print('setting comment_hash to null...')
 	export_cursor.execute('UPDATE reviews SET comment_hash=null;')
-	export_conn.commit()
+	#try to prevent issues from interrupt
+	with export_conn:
+		export_conn.commit()
 
 	print('vacuuming...')
 	export_cursor.execute('VACUUM')
-	export_conn.commit()
+	#try to prevent issues from interrupt
+	with export_conn:
+		export_conn.commit()
 	export_conn.close()
 	print('export complete')
 
@@ -346,7 +360,9 @@ def todb_rehash(db_filepath, TESTING=False, null_only=True):
 		
 	if not TESTING:
 		print('committing...')
-		conn.commit()
+		#try to prevent issues from interrupt
+		with conn:
+			conn.commit()
 	print('rehash stats')
 	if (TESTING):
 		print('comments_hash_passed:'+str(total_comment_pass)+'/'+
@@ -377,11 +393,15 @@ def todb_delete_userids_from_db(dbpath,log_handler,userids, requester_ids):
 		cursor.execute('DELETE FROM reviews WHERE user_id=?',(userid,) )
 		print('user_id:'+str(userid)+' deleting '+str(cursor.rowcount)+
 			' reviews')
-		conn.commit()
+		#try to prevent issues from interrupt
+		with conn:
+			conn.commit()
 		cursor.execute('DELETE FROM comments WHERE user_id=?',(userid,) )
 		print('user_id:'+str(userid)+' deleting '+str(cursor.rowcount)+
 			' comments')
-		conn.commit()
+		#try to prevent issues from interrupt
+		with conn:
+			conn.commit()
 
 	print('deleting '+str(len(requester_ids))+' requester_ids...')
 	
@@ -403,7 +423,10 @@ def todb_delete_userids_from_db(dbpath,log_handler,userids, requester_ids):
 			(requester_id,) )
 		print('requester_id:'+str(requester_id)+' deleting '+
 			str(cursor.rowcount)+' reviews')
-		conn.commit()
+		
+		#try to prevent issues from interrupt
+		with conn:
+			conn.commit()
 
 		#delete the comments with the review_ids
 		for review_id in review_ids:
@@ -411,7 +434,9 @@ def todb_delete_userids_from_db(dbpath,log_handler,userids, requester_ids):
 				(review_id,) )
 			print('review_id:'+str(review_id)+' deleting '+
 				str(cursor.rowcount)+' comments')
-			conn.commit()
+			#try to prevent issues from interrupt
+			with conn:
+				conn.commit()
 
 	conn.close()
 
@@ -500,7 +525,9 @@ def todb_update_requester_stats(dbpath, requester_id):
 			(requester_name, a_fair,a_fast,a_pay,a_comm,t_tosviol,requester_id,
 			numreviews))
 
-	conn.commit()
+	#try to prevent issues from interrupt
+	with conn:
+		conn.commit()
 	conn.close()
 
 #update every single requester id, useful for import
@@ -557,7 +584,9 @@ def todb_add_to_table(dbpath,report, log_handler):
 			report['pay'],report['comm'],report['review'],report['review_id'],
 			report['date'],report['notes'],report['user_id'],report['tosviol'], 
 			report['hidden'],report['comment_hash'],report['review_hash']))
-		mod_conn.commit()
+		#try to prevent issues from interrupt
+		with mod_conn:
+			mod_conn.commit()
 		todb_update_requester_stats(dbpath, report['requester_id'])		
 
 		#lastrowid onliy works for the last insert, not update or anything else
@@ -570,7 +599,9 @@ def todb_add_to_table(dbpath,report, log_handler):
 				(p_key_review,report['review_id'],comment['type'],
 				comment['comment'],comment['date'],comment['user_id'],
 				comment['notes']))
-			mod_conn.commit()
+			#try to prevent issues from interrupt
+			with mod_conn:
+				mod_conn.commit()
 			comments_modified+=1
 			
 		status='added'
@@ -590,7 +621,9 @@ def todb_add_to_table(dbpath,report, log_handler):
 				report['review_id'],report['date'],report['notes'],
 				report['user_id'],report['tosviol'],report['hidden'],
 				report['comment_hash'], report['review_hash'], row[0]))
-			mod_conn.commit()
+			#try to prevent issues from interrupt
+			with mod_conn:
+				mod_conn.commit()
 
 			todb_update_requester_stats(dbpath, report['requester_id'])
 
@@ -621,7 +654,9 @@ def todb_add_to_table(dbpath,report, log_handler):
 					comment['comment'],comment['date'],comment['user_id'],
 					comment['notes']))
 					comments_modified+=1
-				mod_conn.commit()
+				#try to prevent issues from interrupt
+				with mod_conn:
+					mod_conn.commit()
 	
 	return {'status':status,'comments_modified':comments_modified}
 

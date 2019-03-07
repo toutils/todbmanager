@@ -321,6 +321,13 @@ def main():
 		help="file path to database, if it does not exist it will be"
 			" created, default: to.db" )
 
+	parser.add_argument("--autoupdate", action="store_true",
+		help="instead of closing after completing a scrape, keep alive and "
+		"check for updates on interval ( set with --autoupdate_interval )")
+
+	parser.add_argument("--autoupdate_interval", type=float, default=300,
+		help="interval to check for updates in autoupdate mode, in seconds")
+
 	parser.add_argument("--stats", action="store_true",
 		help="print database stats and exit" )
 
@@ -473,11 +480,26 @@ def main():
 
 	toscraper_set_orderby(session,to_url,args.orderby,args.timeout)
 
-	#log any exceptions before quitting
-	
-	scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
-		args.ratelimit,args.dontstop,args.timeout, user_blocklist, 
-		requester_blocklist)
+	try:
+		if args.autoupdate:
+			time_start=time.time()
+			while(1==1):
+				time_start=time.time()
+				scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
+					args.ratelimit,args.dontstop,args.timeout, user_blocklist, 
+					requester_blocklist)
+				wait_time=args.autoupdate_interval-(time.time()-time_start)
+				if wait_time > 0:
+					print('scrape complete, waiting '+str(wait_time)+'s')
+					time.sleep(wait_time)
+		else:
+			scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
+				args.ratelimit,args.dontstop,args.timeout, user_blocklist, 
+				requester_blocklist)
+
+	except(KeyboardInterrupt, SystemExit):
+		log_handler('info','main','keyboard interrupt detected, closing')
+		return
 
 if __name__ == '__main__':
 	main()
