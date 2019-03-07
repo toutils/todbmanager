@@ -183,7 +183,11 @@ If you want to report a bug, submitting all 3 of these files would be helpful,
 however "error_last_page.html" may contain user information (your username and
 a temporary login session token), and "errors.log" may contain system directory
 information (which might include your system username). 
-
+**You can delete any of these files at any time, they will be recreated as
+needed. 
+**If using autoupdate (especially on a short interval) todbmanager will
+write basic scrape stats into the file and it will grow in size indefinitely 
+if not deleted occasionally. 
 
 ## NOTES
 --I'm a turkopticon user, I don't want my reviews / comments included 
