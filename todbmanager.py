@@ -166,7 +166,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 				log_handler('error','scrape_to',traceback.format_exc())
 				try:
 					f=open('error_reports.json','w')
-					f.write(json.dumps(reports))
+					f.write(json.dumps(cleaned_reports))
 					f.close()
 					log_handler('error','scrape_to','reports saved to '
 					'error_reports.json')

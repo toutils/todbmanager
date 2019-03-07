@@ -107,20 +107,17 @@ def todb_create_tables(dbpath):
 	cursor.execute ("CREATE INDEX IF NOT EXISTS "
 					"todbmanager_reviews_requester_id_index ON "
 					"reviews (requester_id) ")
-	cursor.execute ("CREATE INDEX IF NOT EXISTS "
-					"todbmanager_reviews_date_index ON "
-					"reviews (requester_id) ")
 
 	#used by everything using requester stats
 	cursor.execute("CREATE INDEX IF NOT EXISTS "
 		"todbmanager_reviews_stats ON "
 		"reviews (requester_id, requester_name, fair, fast, pay, comm, "
 		"tosviol)")
-	
+
 	#used by add_to_table
 	cursor.execute ("CREATE INDEX IF NOT EXISTS "
-		"todbmanager_reviews_review_id_comment_hash_review_hash_index ON "
-		"reviews (review_id, comment_hash, review_hash)")
+		"todbmanager_reviews_requester_id_user_id_comment_hash_review_hash ON "
+		"reviews (requester_id, user_id, comment_hash, review_hash)")
 	
 	print ('creating comments table if needed...')
 	cursor.execute ("create table if not exists comments ("
@@ -573,10 +570,14 @@ def todb_add_to_table(dbpath,report, log_handler):
 	#review_id may not be accurate, instead compare with user_id and
 	#requester_id
 	#if match, update instead of add.
+	#search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
+	#	'reviews WHERE review_id=?',(report['review_id'],) )
+	#row=search_cursor.fetchone()
 	search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
-		'reviews WHERE review_id=?',(report['review_id'],) )
-	row=search_cursor.fetchone()
+		'reviews WHERE requester_id=? AND user_id=?',
+		(report['requester_id'],report['user_id']) )
 	
+	row=search_cursor.fetchone()
 	if row==None:   #brand new review, not edited
 		mod_cursor.execute('INSERT INTO reviews VALUES '
 			'(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(report['requester_id'],
@@ -606,7 +607,7 @@ def todb_add_to_table(dbpath,report, log_handler):
 			
 		status='added'
 	
-	#a review was found matching review_id, check if review hash 
+	#a review was found matching user_id and requester_id, check if review hash 
 	#matches for changes
 	else: 
 		#the review has been changed, update
