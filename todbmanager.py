@@ -478,8 +478,6 @@ def main():
 	scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
 		args.ratelimit,args.dontstop,args.timeout, user_blocklist, 
 		requester_blocklist)
-	
-	log_handler('error','main','scrapeto:'+ traceback.format_exc())
 
 if __name__ == '__main__':
 	main()
