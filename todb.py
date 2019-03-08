@@ -246,7 +246,7 @@ def todb_rehash(db_filepath, TESTING=False, null_only=True):
 	comment_cursor=conn.cursor()
 	update_cursor=conn.cursor()
 
-	cursor.execute("SELECT rowid, comm, commdnt_hash, date, fair, fast, "
+	cursor.execute("SELECT rowid, comm, comment_hash, date, fair, fast, "
 					"hidden, notes, pay, requester_id, requester_name, review, "
 					"review_hash, review_id, tosviol, user_id FROM reviews")
 
