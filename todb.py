@@ -654,7 +654,7 @@ def todb_add_to_table(dbpath,report, log_handler):
 
 				if(p_key_review==None):
 					#this shouldn't happen now, log if it does
-					log_handler('ERROR','worker:add_to_table',
+					log_handler('error','todb_add_to_table',
 						'comments p_key_review is null')
 				
 				mod_cursor.execute('DELETE FROM comments WHERE p_key_review=?',
