@@ -7,6 +7,7 @@ This is a signficant change.
 violations) are tracked in a new table. The stats are updated every time a new
 or modified review is detected for a requester. This is to facilitate a future
 api server, and will be used by todbreader. 
+-Auto-update, stay running and check TO for updates on interval. 
 -Database meta table added (it's only used for db version information at the
 moment)
 -Multiprocessing dropped to simplify code, may be re-added later

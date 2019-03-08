@@ -27,6 +27,16 @@ class todbException(Exception):
 	def __init__(self, message):
 		self.message=message
 
+#callback for conn.set_trace_callback
+#for database update use
+def todb_save_sql(sql):
+	#don't save select statements
+	if sql.split(' ')[0].lower()=="select":
+		return
+	f=open('saved_sql.sql','a')
+	f.write(sql+';')
+	f.close()
+
 #read key/value data from meta table
 def todb_read_meta(dbpath, key):
 	conn=sqlite3.connect(dbpath)
@@ -236,7 +246,7 @@ def todb_rehash(db_filepath, TESTING=False, null_only=True):
 	comment_cursor=conn.cursor()
 	update_cursor=conn.cursor()
 
-	cursor.execute("SELECT rowid, comm, comment_hash, date, fair, fast, "
+	cursor.execute("SELECT rowid, comm, commdnt_hash, date, fair, fast, "
 					"hidden, notes, pay, requester_id, requester_name, review, "
 					"review_hash, review_id, tosviol, user_id FROM reviews")
 
@@ -553,13 +563,14 @@ def todb_update_all_requester_stats(dbpath):
 	print('stats update complete')	
 
 	conn.close()
-	
 
 #add a report to a table
 #check for duplicates, return added,modified,none
 #takes a mod_cursor to support bulk commits, speeds up sqlite inserts
 def todb_add_to_table(dbpath,report, log_handler):
 	mod_conn=sqlite3.connect(dbpath,timeout=60)
+	#mod_conn.set_trace_callback(todb_save_sql)
+
 	mod_cursor=mod_conn.cursor()
 	search_cursor=mod_conn.cursor()
 
