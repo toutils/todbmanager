@@ -38,6 +38,7 @@ class todbmanagerException(Exception):
 		self.message=message
 
 to_url='https://turkopticon.ucsd.edu/'
+global_version=0.2
 
 #write to the log file
 def log_handler(level,orig,message):
@@ -368,6 +369,9 @@ def main():
 	parser.add_argument("--maxretry", type=int, default=30,
 		help="maximum number of retries after a failed request" )
 
+	parser.add_argument("--version", action="store_true",
+		help="print version and exit" )
+
 	parser.add_argument("--test_rehash", action="store_true",
 		help="test db rehashing, checks if rehash function matches database"
 			" entry, will exit on completion")
@@ -386,6 +390,22 @@ def main():
 
 
 	args=parser.parse_args()
+
+	if args.version:
+		print("version: "+str(global_version))
+		return
+
+	if args.test_rehash:
+		todb_rehash(args.dbpath, TESTING=True, null_only=False)
+		return
+
+	if args.test_save_test_page_known_good:
+		save_test_page_known_good()
+		return
+
+	if args.test_scrape_reports_page:
+		test_scrape_reports_page()
+		return
 
 	#check if database exists, if not, create it
 	if os.path.isfile(args.dbpath)==False:
@@ -419,18 +439,6 @@ def main():
 		except:
 			log_handler('error','main','todb_export_database failed:'+
 				traceback.format_exc())
-		return
-
-	if args.test_rehash:
-		todb_rehash(args.dbpath, TESTING=True, null_only=False)
-		return
-
-	if args.test_save_test_page_known_good:
-		save_test_page_known_good()
-		return
-
-	if args.test_scrape_reports_page:
-		test_scrape_reports_page()
 		return
 
 	try:

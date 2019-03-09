@@ -184,7 +184,8 @@ def todb_drop_indexes(dbpath):
 	
 	index_list=[]
 	while(row!=None):
-		if 'todbmanager' in row[0]:
+		#don't drop sqlite auto indexes
+		if 'sqlite' not in row[0]:
 			index_list.append(row[0])
 			print('found:'+str(row[0]))
 		row=cursor.fetchone()
