@@ -472,6 +472,7 @@ def todb_update_requester_stats(dbpath, requester_id):
 	search_cursor.execute("SELECT requester_name,fair,fast,pay,comm,tosviol FROM reviews "
 		"WHERE requester_id=?", (requester_id,))
 	row=search_cursor.fetchone()
+	#there is atleast one review for this requester
 	if row is not None:
 		while(row is not None):
 			numreviews+=1
@@ -492,7 +493,7 @@ def todb_update_requester_stats(dbpath, requester_id):
 			#the stats requester_name will end up being the last one inserted
 			requester_name=row[0]
 			row=search_cursor.fetchone()
-
+		
 		if c_fair==0:
 			a_fair=None
 		else:
@@ -527,11 +528,12 @@ def todb_update_requester_stats(dbpath, requester_id):
 		mod_cursor.execute('INSERT INTO stats VALUES '
 				'(?,?,?,?,?,?,?,?)',(requester_id, requester_name, a_fair, a_fast,
 				a_pay, a_comm, t_tosviol,numreviews))
+		
 	else: #stats already exist, update
 		mod_cursor.execute("UPDATE stats SET requester_name=?, fair=?, fast=?, "
 			"pay=?, comm=?, tosviol=?, numreviews=? WHERE requester_id=?",
-			(requester_name, a_fair,a_fast,a_pay,a_comm,t_tosviol,requester_id,
-			numreviews))
+			(requester_name, a_fair,a_fast,a_pay,a_comm,t_tosviol,numreviews,
+			requester_id))
 
 	#try to prevent issues from interrupt
 	with conn:
@@ -600,7 +602,7 @@ def todb_add_to_table(dbpath,report, log_handler):
 		#try to prevent issues from interrupt
 		with mod_conn:
 			mod_conn.commit()
-		todb_update_requester_stats(dbpath, report['requester_id'])		
+		todb_update_requester_stats(dbpath, report['requester_id'])
 
 		#lastrowid onliy works for the last insert, not update or anything else
 		p_key_review=mod_cursor.lastrowid
@@ -641,9 +643,10 @@ def todb_add_to_table(dbpath,report, log_handler):
 			todb_update_requester_stats(dbpath, report['requester_id'])
 
 			status='replaced'
-			#TESTING#####
+			#TESTING
 			#print("REVIEW ROWID CHANGED:"+str(row[0]))
-            #############
+			#print('REPLACED: requester_id:'+report['requester_id'])
+			#print('REPLACED: review:'+report['review'])       
 
 			#the comments may also have changed, check the comment hashes
 			if report['comment_hash']!=row[1]: #comment hashes don't match
