@@ -487,7 +487,7 @@ def main():
 					requester_blocklist)
 				wait_time=args.autoupdate_interval-(time.time()-time_start)
 				if wait_time > 0:
-					print('scrape complete, waiting '+str(wait_time)+'s')
+					print('scrape complete, waiting %.4fs' % (wait_time,))
 					time.sleep(wait_time)
 		else:
 			scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
