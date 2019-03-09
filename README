@@ -2,7 +2,7 @@
 This is a signficant change.
 -Converted to python3
 -Windows support
--Interactive CLI interface droped in favor of arguments
+-Interactive CLI interface dropped in favor of arguments
 -Global requester stats (fair,fast,pay,comm,number of reviews,number of tos
 violations) are tracked in a new table. The stats are updated every time a new
 or modified review is detected for a requester. This is to facilitate a future
