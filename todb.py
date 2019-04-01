@@ -125,9 +125,13 @@ def todb_create_tables(dbpath):
 		"tosviol)")
 
 	#used by add_to_table
+	#cursor.execute ("CREATE INDEX IF NOT EXISTS "
+	#	"todbmanager_reviews_requester_id_user_id_comment_hash_review_hash ON "
+	#	"reviews (requester_id, user_id, comment_hash, review_hash)")
+	#switch back to review_id for duplicate checking
 	cursor.execute ("CREATE INDEX IF NOT EXISTS "
-		"todbmanager_reviews_requester_id_user_id_comment_hash_review_hash ON "
-		"reviews (requester_id, user_id, comment_hash, review_hash)")
+		"todbmanager_reviews_review_id_comment_hash_review_hash ON "
+		"reviews (review_id, comment_hash, review_hash)")
 	
 	print ('creating comments table if needed...')
 	cursor.execute ("create table if not exists comments ("
@@ -569,7 +573,6 @@ def todb_update_all_requester_stats(dbpath):
 
 #add a report to a table
 #check for duplicates, return added,modified,none
-#takes a mod_cursor to support bulk commits, speeds up sqlite inserts
 def todb_add_to_table(dbpath,report, log_handler):
 	mod_conn=sqlite3.connect(dbpath,timeout=60)
 	#mod_conn.set_trace_callback(todb_save_sql)
@@ -581,15 +584,14 @@ def todb_add_to_table(dbpath,report, log_handler):
 	comments_modified=0
 	
 	#check if it already exists in the table
-	#review_id may not be accurate, instead compare with user_id and
-	#requester_id
-	#if match, update instead of add.
+	
+	#switch back to duplicate checking based on review_id to reflect what's
+	#actually on TO
 	#search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
-	#	'reviews WHERE review_id=?',(report['review_id'],) )
-	#row=search_cursor.fetchone()
+	#	'reviews WHERE requester_id=? AND user_id=?',
+	#	(report['requester_id'],report['user_id']) )
 	search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
-		'reviews WHERE requester_id=? AND user_id=?',
-		(report['requester_id'],report['user_id']) )
+		'reviews WHERE review_id=?',(report['review_id'],) )
 	
 	row=search_cursor.fetchone()
 	if row==None:   #brand new review, not edited
@@ -604,7 +606,7 @@ def todb_add_to_table(dbpath,report, log_handler):
 			mod_conn.commit()
 		todb_update_requester_stats(dbpath, report['requester_id'])
 
-		#lastrowid onliy works for the last insert, not update or anything else
+		#lastrowid only works for the last insert, not update or anything else
 		p_key_review=mod_cursor.lastrowid
 		if(p_key_review==None):
 			print("ERROR: NEW REVIEW P_KEY_REVIEW NULL")
@@ -621,7 +623,7 @@ def todb_add_to_table(dbpath,report, log_handler):
 			
 		status='added'
 	
-	#a review was found matching user_id and requester_id, check if review hash 
+	#a review was found matching review_id, check if review hash 
 	#matches for changes
 	else: 
 		#the review has been changed, update
