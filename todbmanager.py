@@ -38,7 +38,8 @@ class todbmanagerException(Exception):
 		self.message=message
 
 to_url='https://turkopticon.ucsd.edu/'
-global_version=0.2
+global_version='0.3.1'
+global_db_version='1'
 
 #write to the log file
 def log_handler(level,orig,message):
@@ -60,6 +61,9 @@ def load_blocklist(filepath):
 
 def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 		timeout, user_blocklist, requester_blocklist):
+
+	conn=sqlite3.connect(dbpath,timeout=60)
+
 	log_handler('info','scrape_to','scrape started '
 		'page_start:'+str(page_start)+' page_end:'+str(page_end)+' rate_limit:'+
 		str(rate_limit)+' dontstop:'+str(dontstop))
@@ -155,45 +159,61 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 
 		added=0
 		replaced=0
+		ignored=0
 		comments_modified=0
 
 		time_db=time.time()
-		for report in cleaned_reports:
+		r_ids_to_statsupdate=[]
+
+		try:
+			db_result=todb_add_to_table(dbpath,cleaned_reports,conn,log_handler)
+			with conn:
+				conn.commit()
+			#figure out which requester ids are new/changed
+			for value in db_result:
+				if value['status']=='replaced' or value['status']=='added':
+					r_ids_to_statsupdate.append(value['requester_id'])
+				if value['status']=='replaced':
+					replaced+=1
+				elif value['status']=='added':
+					added+=1
+				elif value['status']=='ignored':
+					ignored+=1
+				comments_modified+=value['comments_modified']
+
+			#update stats in bulk
+			todb_fast_update_requester_stats(conn, r_ids_to_statsupdate)
+			with conn:
+				conn.commit()
+
+		except(Exception):
+			log_handler('error','scrape_to','database error')
+			log_handler('error','scrape_to','url:'+request_url)
+			log_handler('error','scrape_to',traceback.format_exc())
 			try:
-				db_result=todb_add_to_table(dbpath,report,log_handler)
+				f=open('error_reports.json','w')
+				f.write(json.dumps(cleaned_reports))
+				f.close()
+				log_handler('error','scrape_to','reports saved to '
+				'error_reports.json')
 			except(Exception):
-				log_handler('error','scrape_to','database error')
-				log_handler('error','scrape_to','url:'+request_url)
+				log_handler('error','scrape_to','unable to save reports')
 				log_handler('error','scrape_to',traceback.format_exc())
-				try:
-					f=open('error_reports.json','w')
-					f.write(json.dumps(cleaned_reports))
-					f.close()
-					log_handler('error','scrape_to','reports saved to '
-					'error_reports.json')
-				except(Exception):
-					log_handler('error','scrape_to','unable to save reports')
-					log_handler('error','scrape_to',traceback.format_exc())
-				try:
-					f=open('error_last_page.html','w')
-					f.write(response.text)
-					f.close()
-					log_handler('error','scrape_to','last page saved to '
-						'error_last_page.html')
-				except(Exception):
-					log_handler('error','scrape_to','unable to save response')
-					log_handler('error','scrape_to',traceback.format_exc())
-				return
-
-			if db_result['status']=='added':
-				added+=1
-			elif db_result['status']=='replaced':
-				replaced+=1
-			comments_modified+=db_result['comments_modified']
-
+			try:
+				f=open('error_last_page.html','w')
+				f.write(response.text)
+				f.close()
+				log_handler('error','scrape_to','last page saved to '
+					'error_last_page.html')
+			except(Exception):
+				log_handler('error','scrape_to','unable to save response')
+				log_handler('error','scrape_to',traceback.format_exc())
+			return
+		
 		time_db=time.time()-time_db
 
-		print ('----added:'+str(added)+' replaced:'+str(replaced)+' /'+
+		print ('----added:'+str(added)+' replaced:'+str(replaced)+
+			' ignored:'+str(ignored)+' /'+
 			str(len(cleaned_reports))+' comments_modified:'+
 			str(comments_modified)+' from:'+request_url)
 		print('----time: scrape:%.4fs db:%.4fs' % (time_scrape,time_db))
@@ -230,6 +250,7 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 	'Total Reviews Added:'+str(total_added)+' Replaced:'+
 	str(total_replaced)+' Processed:'+str(total_processed)+
 	' Comments Modified:'+str(total_comments_modified) )
+	conn.close()
 			
 
 #run a test page through toscraper_scrape_reports_page and save the result
@@ -418,8 +439,12 @@ def main():
 		todb_rehash(args.dbpath)
 		return
 
-	if args.rebuildstats:
-		todb_update_all_requester_stats(args.dbpath)
+	if args.rebuildstats:		
+		#todb_update_all_requester_stats(args.dbpath)
+		#use the new function instead
+		conn=sqlite3.connect(args.dbpath,timeout=60)
+		todb_fast_update_requester_stats(conn, "all")
+		conn.close()
 		return
 
 	if args.rebuildindexes:
@@ -508,9 +533,3 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
-
-
-
-
-

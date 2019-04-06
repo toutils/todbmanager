@@ -22,6 +22,10 @@ import os
 import shutil
 import json
 import hashlib
+import re
+
+#debug only
+#import time
 
 class todbException(Exception):
 	def __init__(self, message):
@@ -452,11 +456,138 @@ def todb_delete_userids_from_db(dbpath,log_handler,userids, requester_ids):
 
 	conn.close()
 
+#take a list of requester ids and update the stats table
+#as fast as possible
+#if requester_ids isn't a list, but is just "all", update everything
+#output some stats information if "all"
+def todb_fast_update_requester_stats(conn, requester_ids):
+	search_cursor=conn.cursor()
+	mod_cursor=conn.cursor()
+	progress=0
+	result_dict={}
+
+	#query for all requester_ids at once and load into result_dict
+	if requester_ids=="all":
+		search_cursor.execute("SELECT requester_name,requester_id,fair,fast,pay,comm,tosviol FROM reviews ")
+	else:
+		#alternate method, slightly slower
+		#def regexp(expr, item):
+		#	reg = re.compile(expr)
+		#	return reg.search(item) is not None
+		#conn.create_function("REGEXP", 2, regexp)
+		#regex_str='|'.join(requester_ids)
+		#search_cursor.execute("SELECT requester_name,requester_id,fair,fast,pay,comm,tosviol FROM reviews "
+		#	"WHERE requester_id REGEXP ?", (regex_str,))
+		search_cursor.execute( "SELECT requester_name,requester_id,fair,fast,pay,comm,tosviol FROM reviews "
+			"WHERE requester_id IN (%s)" % ','.join('?'*len(requester_ids)), requester_ids)
+	
+	row=search_cursor.fetchone()
+	#there's no reviews in the reviews table
+	if row is None:
+		return
+	while(row is not None):
+		#initialize if requester_id isn't in dict
+		if row[1] not in result_dict:
+			result_dict[row[1]]={}
+			result_dict[row[1]]["fair"]=0.0
+			result_dict[row[1]]["count_fair"]=0
+			result_dict[row[1]]["fast"]=0.0
+			result_dict[row[1]]["count_fast"]=0
+			result_dict[row[1]]["pay"]=0.0
+			result_dict[row[1]]["count_pay"]=0
+			result_dict[row[1]]["comm"]=0.0
+			result_dict[row[1]]["count_comm"]=0
+			result_dict[row[1]]["tosviol"]=0
+			result_dict[row[1]]["numreviews"]=0
+			result_dict[row[1]]["requester_name"]=""
+
+		result_dict[row[1]]["numreviews"]+=1
+		if row[2] is not None:
+			result_dict[row[1]]["fair"]+=row[2]
+			result_dict[row[1]]["count_fair"]+=1
+		if row[3] is not None:
+			result_dict[row[1]]["fast"]+=row[3]
+			result_dict[row[1]]["count_fast"]+=1
+		if row[4] is not None:
+			result_dict[row[1]]["pay"]+=row[4]
+			result_dict[row[1]]["count_pay"]+=1
+		if row[5] is not None:
+			result_dict[row[1]]["comm"]+=row[5]
+			result_dict[row[1]]["count_comm"]+=1
+		if row[6] is not None:
+			result_dict[row[1]]["tosviol"]+=row[6]
+		#the stats requester_name will end up being the last one inserted
+		result_dict[row[1]]["requester_name"]=row[0]
+
+		#output stats if "all"
+		if requester_ids=="all":
+			progress+=1
+			if (progress % 10000 )==0:
+				print(str(progress)+' added', end="\r", flush=True)
+
+		row=search_cursor.fetchone()
+
+	if requester_ids=="all":
+		print()
+
+	#calculate stats from review_dict
+	progress=0
+	total_ids=len(result_dict)
+	for requester_id, result in result_dict.items():
+		if result["count_fair"]==0:
+			result["fair"]=None
+		else:
+			result["fair"]=float(result["fair"])/float(result["count_fair"])
+
+		if result["count_fast"]==0:
+			result["fast"]=None
+		else:
+			result["fast"]=float(result["fast"])/float(result["count_fast"])
+
+		if result["count_pay"]==0:
+			result["pay"]=None
+		else:
+			result["pay"]=float(result["pay"])/float(result["count_pay"])
+
+		if result["count_comm"]==0:
+			result["comm"]=None
+		else:
+			result["comm"]=float(result["comm"])/float(result["count_comm"])
+
+		#update stats table
+		search_cursor.execute("SELECT rowid FROM stats WHERE requester_id=?",
+			(requester_id,))
+		row=search_cursor.fetchone()
+		if row is None: #first stats, insert	
+			mod_cursor.execute('INSERT INTO stats VALUES '
+					'(?,?,?,?,?,?,?,?)',(requester_id, result["requester_name"], result["fair"],
+					result["fast"], result["pay"], result["comm"],
+					result["tosviol"],result["numreviews"]))
+		
+		else: #stats already exist, update
+			mod_cursor.execute("UPDATE stats SET requester_name=?, fair=?, fast=?, "
+				"pay=?, comm=?, tosviol=?, numreviews=? WHERE requester_id=?",
+				(result["requester_name"], result["fair"],
+					result["fast"], result["pay"], result["comm"],
+					result["tosviol"],result["numreviews"],
+					requester_id))
+
+		if requester_ids=="all":
+			progress+=1
+			if (progress % 10000 and total_ids>0 )==0 or progress==total_ids:
+				print(str(progress)+'/'+str(total_ids)+' complete', end="\r", flush=True)
+	if requester_ids=="all":
+		print()
+		print("stats table recalculated")
+
+'''
+#keep the old version for now as reference
+
 #update stats for a requester id
 #add stats if they don't exist
-def todb_update_requester_stats(dbpath, requester_id):
+def todb_update_requester_stats(conn, requester_id):
 
-	conn=sqlite3.connect(dbpath,timeout=60)
+	#conn=sqlite3.connect(dbpath,timeout=60)
 	search_cursor=conn.cursor()
 	mod_cursor=conn.cursor()
 
@@ -538,18 +669,13 @@ def todb_update_requester_stats(dbpath, requester_id):
 			"pay=?, comm=?, tosviol=?, numreviews=? WHERE requester_id=?",
 			(requester_name, a_fair,a_fast,a_pay,a_comm,t_tosviol,numreviews,
 			requester_id))
-
-	#try to prevent issues from interrupt
-	with conn:
-		conn.commit()
-	conn.close()
+'''
 
 #update every single requester id, useful for import
 #NOTE some reviews don't have requester ids,or names, confirmed by cross 
 #referencing user reviews. The only way these are accessible is via the main
 #page, or on a user's review page ( https://turkopticon.ucsd.edu/by/{userid}
-def todb_update_all_requester_stats(dbpath):
-	conn=sqlite3.connect(dbpath,timeout=60)
+def todb_update_all_requester_stats(conn):
 	search_cursor=conn.cursor()
 	print('generating requester_id list...')
 	search_cursor.execute("SELECT DISTINCT requester_id FROM reviews")
@@ -561,7 +687,7 @@ def todb_update_all_requester_stats(dbpath):
 
 	print('updating requester stats table...')
 	for req_id in requester_ids:
-		todb_update_requester_stats(dbpath, req_id[0])
+		todb_update_requester_stats(conn, req_id[0])
 			
 		progress+=1
 		if (progress % 1000 and total_ids>0 )==0:
@@ -569,115 +695,98 @@ def todb_update_all_requester_stats(dbpath):
 
 	print('stats update complete')	
 
-	conn.close()
+	#conn.close()
 
 #add a report to a table
 #check for duplicates, return added,modified,none
-def todb_add_to_table(dbpath,report, log_handler):
-	mod_conn=sqlite3.connect(dbpath,timeout=60)
+#def todb_add_to_table(dbpath,report, conn, log_handler):
+def todb_add_to_table(dbpath,reports, conn, log_handler):
 	#mod_conn.set_trace_callback(todb_save_sql)
+	mod_cursor=conn.cursor()
+	search_cursor=conn.cursor()
 
-	mod_cursor=mod_conn.cursor()
-	search_cursor=mod_conn.cursor()
+	return_list=[]
 
-	status=None
-	comments_modified=0
+	for report in reports:
+		status=None
+		comments_modified=0
 	
-	#check if it already exists in the table
+		#check if it already exists in the table
 	
-	#switch back to duplicate checking based on review_id to reflect what's
-	#actually on TO
-	#search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
-	#	'reviews WHERE requester_id=? AND user_id=?',
-	#	(report['requester_id'],report['user_id']) )
-	search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
-		'reviews WHERE review_id=?',(report['review_id'],) )
+		#switch back to duplicate checking based on review_id to reflect what's
+		#actually on TO
+		#search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
+		#	'reviews WHERE requester_id=? AND user_id=?',
+		#	(report['requester_id'],report['user_id']) )
+		search_cursor.execute('SELECT rowid,comment_hash,review_hash FROM '
+			'reviews WHERE review_id=?',(report['review_id'],) )
 	
-	row=search_cursor.fetchone()
-	if row==None:   #brand new review, not edited
-		mod_cursor.execute('INSERT INTO reviews VALUES '
-			'(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(report['requester_id'],
-			report['requester_name'],report['fair'],report['fast'],
-			report['pay'],report['comm'],report['review'],report['review_id'],
-			report['date'],report['notes'],report['user_id'],report['tosviol'], 
-			report['hidden'],report['comment_hash'],report['review_hash']))
-		#try to prevent issues from interrupt
-		with mod_conn:
-			mod_conn.commit()
-		todb_update_requester_stats(dbpath, report['requester_id'])
+		row=search_cursor.fetchone()
+		if row==None:   #brand new review, not edited
+			mod_cursor.execute('INSERT INTO reviews VALUES '
+				'(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',(report['requester_id'],
+				report['requester_name'],report['fair'],report['fast'],
+				report['pay'],report['comm'],report['review'],report['review_id'],
+				report['date'],report['notes'],report['user_id'],report['tosviol'], 
+				report['hidden'],report['comment_hash'],report['review_hash']))
 
-		#lastrowid only works for the last insert, not update or anything else
-		p_key_review=mod_cursor.lastrowid
-		if(p_key_review==None):
-			print("ERROR: NEW REVIEW P_KEY_REVIEW NULL")
+			#lastrowid only works for the last insert, not update or anything else
+			p_key_review=mod_cursor.lastrowid
+			if(p_key_review==None):
+				print("ERROR: NEW REVIEW P_KEY_REVIEW NULL")
 
-		for comment in report['comments']:
-			mod_cursor.execute('INSERT INTO comments VALUES (?,?,?,?,?,?,?)',
-				(p_key_review,report['review_id'],comment['type'],
-				comment['comment'],comment['date'],comment['user_id'],
-				comment['notes']))
-			#try to prevent issues from interrupt
-			with mod_conn:
-				mod_conn.commit()
-			comments_modified+=1
-			
-		status='added'
-	
-	#a review was found matching review_id, check if review hash 
-	#matches for changes
-	else: 
-		#the review has been changed, update
-		if str(row[2])!=str(report['review_hash']):
-
-			mod_cursor.execute( 'UPDATE reviews SET requester_id=?, '
-				'requester_name=?, fair=?, fast=?, pay=?, comm=?, review=?, '
-				'review_id=?,date=?,notes=?, user_id=?, tosviol=?, hidden=?, '
-				'comment_hash=?, review_hash=? WHERE rowid=?',
-				(report['requester_id'],report['requester_name'],report['fair'],
-				report['fast'],report['pay'], report['comm'],report['review'],
-				report['review_id'],report['date'],report['notes'],
-				report['user_id'],report['tosviol'],report['hidden'],
-				report['comment_hash'], report['review_hash'], row[0]))
-			#try to prevent issues from interrupt
-			with mod_conn:
-				mod_conn.commit()
-
-			todb_update_requester_stats(dbpath, report['requester_id'])
-
-			status='replaced'
-			#TESTING
-			#print("REVIEW ROWID CHANGED:"+str(row[0]))
-			#print('REPLACED: requester_id:'+report['requester_id'])
-			#print('REPLACED: review:'+report['review'])       
-
-			#the comments may also have changed, check the comment hashes
-			if report['comment_hash']!=row[1]: #comment hashes don't match
-				#drop all comments for this review, and re-add
-				
-				#only works for insert, not update
-				#p_key_review=mod_cursor.lastrowid
-				p_key_review=row[0]
-
-				if(p_key_review==None):
-					#this shouldn't happen now, log if it does
-					log_handler('error','todb_add_to_table',
-						'comments p_key_review is null')
-				
-				mod_cursor.execute('DELETE FROM comments WHERE p_key_review=?',
-					(p_key_review,) )
-				for comment in report['comments']:
-					mod_cursor.execute('INSERT INTO comments VALUES '
-					'(?,?,?,?,?,?,?)',
+			for comment in report['comments']:
+				mod_cursor.execute('INSERT INTO comments VALUES (?,?,?,?,?,?,?)',
 					(p_key_review,report['review_id'],comment['type'],
 					comment['comment'],comment['date'],comment['user_id'],
 					comment['notes']))
-					comments_modified+=1
-				#try to prevent issues from interrupt
-				with mod_conn:
-					mod_conn.commit()
+				comments_modified+=1
+			
+			status='added'
 	
-	return {'status':status,'comments_modified':comments_modified}
+		#a review was found matching review_id, check if review hash 
+		#matches for changes
+		else: 
+			#the review has been changed, update
+			if str(row[2])!=str(report['review_hash']):
 
+				mod_cursor.execute( 'UPDATE reviews SET requester_id=?, '
+					'requester_name=?, fair=?, fast=?, pay=?, comm=?, review=?, '
+					'review_id=?,date=?,notes=?, user_id=?, tosviol=?, hidden=?, '
+					'comment_hash=?, review_hash=? WHERE rowid=?',
+					(report['requester_id'],report['requester_name'],report['fair'],
+					report['fast'],report['pay'], report['comm'],report['review'],
+					report['review_id'],report['date'],report['notes'],
+					report['user_id'],report['tosviol'],report['hidden'],
+					report['comment_hash'], report['review_hash'], row[0]))
+				status='replaced'   
 
+				#the comments may also have changed, check the comment hashes
+				if report['comment_hash']!=row[1]: #comment hashes don't match
+					#drop all comments for this review, and re-add
+				
+					#only works for insert, not update
+					#p_key_review=mod_cursor.lastrowid
+					p_key_review=row[0]
 
+					if(p_key_review==None):
+						#this shouldn't happen now, log if it does
+						log_handler('error','todb_add_to_table',
+							'comments p_key_review is null')
+				
+					mod_cursor.execute('DELETE FROM comments WHERE p_key_review=?',
+						(p_key_review,) )
+					for comment in report['comments']:
+						mod_cursor.execute('INSERT INTO comments VALUES '
+						'(?,?,?,?,?,?,?)',
+						(p_key_review,report['review_id'],comment['type'],
+						comment['comment'],comment['date'],comment['user_id'],
+						comment['notes']))
+						comments_modified+=1
+			else:
+				status='ignored'
+		
+		return_list.append( {'status':status,'comments_modified':comments_modified,
+								'requester_id':report['requester_id'] } )
+	return return_list
 

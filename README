@@ -1,29 +1,11 @@
-***v0.3 changes***
-This is a signficant change.
--Converted to python3
--Windows support
--Interactive CLI interface dropped in favor of arguments
--Global requester stats (fair,fast,pay,comm,number of reviews,number of tos
-violations) are tracked in a new table. The stats are updated every time a new
-or modified review is detected for a requester. This is to facilitate a future
-api server, and will be used by todbreader. 
--Auto-update, stay running and check TO for updates on interval. 
--Database meta table added (it's only used for db version information at the
-moment)
--Multiprocessing dropped to simplify code, may be re-added later
--Significant code cleanup
-
-It is possible to convert your existing database to v0.3, but it is not
-recommended, download the latest database on the release tab. 
-
-To convert to the new database (copy it in and rename to to.db, or use
---dbpath)
-$python3 todbmanager.py --importdb
-$python3 todbmanager.py --rebuildstats
-
-The possible problem with converting the database is every review will be
-flagged as modified due to a hash mismatch, but during testing this did not
-occur. If you have any problems, download the new database. 
+***v0.3.1 changes***
+-Improved database performance dramatically
+-1 index was changed, because tables were not changed the database version 
+was not incremented. To update your existing database, run
+todbmanager.py --rebuildindexes
+This will drop ALL indexes on the database (and recreate the todbmanager ones), 
+including those created by todbreader, however todbreader will automatically 
+recreate todbreader indexes the next time you load the database with it. 
 *****************
 
 todbmanager is a utility to scrape turkopticon into a database, and assist
