@@ -10,6 +10,9 @@ recreate todbreader indexes the next time you load the database with it.
 user_id to more closely mirror what's on TO. TO1 does have duplicate reviews
 (1 user reviewing 1 requester id multiple times) in some cases, however they do
 have seperate review_ids. 
+-Added --nostats option, to turn off updating the stats table during a scrape. 
+useful during full scrapes when it's more effecient to just rebuild the stats
+table after the scrape is complete. 
 *****************
 
 todbmanager is a utility to scrape turkopticon into a database, and assist

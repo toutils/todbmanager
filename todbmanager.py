@@ -60,13 +60,13 @@ def load_blocklist(filepath):
 	return cleaned_list
 
 def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
-		timeout, user_blocklist, requester_blocklist):
+		timeout, user_blocklist, requester_blocklist, nostats=False):
 
 	conn=sqlite3.connect(dbpath,timeout=60)
 
 	log_handler('info','scrape_to','scrape started '
 		'page_start:'+str(page_start)+' page_end:'+str(page_end)+' rate_limit:'+
-		str(rate_limit)+' dontstop:'+str(dontstop))
+		str(rate_limit)+' dontstop:'+str(dontstop)+' nostats: '+str(nostats))
 
 	try:
 		response=toscraper_fetch(session, to_url, 'reports', timeout)
@@ -182,9 +182,10 @@ def scrape_to(session,dbpath,to_url,page_start,page_end,rate_limit,dontstop,
 				comments_modified+=value['comments_modified']
 
 			#update stats in bulk
-			todb_fast_update_requester_stats(conn, r_ids_to_statsupdate)
-			with conn:
-				conn.commit()
+			if not nostats:
+				todb_fast_update_requester_stats(conn, r_ids_to_statsupdate)
+				with conn:
+					conn.commit()
 
 		except(Exception):
 			log_handler('error','scrape_to','database error')
@@ -390,6 +391,10 @@ def main():
 	parser.add_argument("--maxretry", type=int, default=30,
 		help="maximum number of retries after a failed request" )
 
+	parser.add_argument("--nostats", action="store_true",
+		help="don't update the stats table, useful during a full scrape "
+			"when it's more effecient to run --rebuildstats after it's done" )
+
 	parser.add_argument("--version", action="store_true",
 		help="print version and exit" )
 
@@ -517,7 +522,7 @@ def main():
 				time_start=time.time()
 				scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
 					args.ratelimit,args.dontstop,args.timeout, user_blocklist, 
-					requester_blocklist)
+					requester_blocklist, args.nostats)
 				wait_time=args.autoupdate_interval-(time.time()-time_start)
 				if wait_time > 0:
 					print('scrape complete, waiting %.4fs' % (wait_time,))
@@ -525,7 +530,7 @@ def main():
 		else:
 			scrape_to(session,args.dbpath,to_url,args.pagestart,args.pageend,
 				args.ratelimit,args.dontstop,args.timeout, user_blocklist, 
-				requester_blocklist)
+				requester_blocklist, args.nostats)
 
 	except(KeyboardInterrupt, SystemExit):
 		log_handler('info','main','keyboard interrupt detected, closing')
