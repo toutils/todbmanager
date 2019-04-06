@@ -469,6 +469,8 @@ def todb_fast_update_requester_stats(conn, requester_ids):
 	#query for all requester_ids at once and load into result_dict
 	if requester_ids=="all":
 		search_cursor.execute("SELECT requester_name,requester_id,fair,fast,pay,comm,tosviol FROM reviews ")
+	elif requester_ids=[]:
+		return
 	else:
 		#alternate method, slightly slower
 		#def regexp(expr, item):
