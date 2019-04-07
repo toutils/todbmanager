@@ -159,7 +159,21 @@ def toscraper_scrape_reports_page(page,request_url,log_handler, user_blocklist, 
 				if 'no' in rating['score']:
 					rating['score']=None
 				else:
-					rating['score']=int(rating['score'].split('/')[0])
+					#there is an ancient review (~page 14735 https://turkopticon.ucsd.edu/reports?id=A2Z6Z84FDIF2W8)
+					#that throws an exception
+					#<div class="smlabel">&nbsp;/&nbsp;5</div>
+					#throws ValueError: invalid literal for int() with base 10: '\xa0'
+					#instead of tossing the whole review, catch this and preserve everything else
+					try:
+						rating['score']=int(rating['score'].split('/')[0])
+					except ValueError:
+						log_handler('info','ToAPI:scrape_reports_page','caught value error on score field, setting to none')
+						log_handler('info','ToAPI:scrape_reports_page','rating[score]='+str(rating['score']) )
+						log_handler('info','ToAPI:scrape_reports_page',
+							'request_url:'+request_url+' scrape exception:'+traceback.format_exc())
+						rating['score']=None
+						
+						
 			#insert into dictionary
 			for rating in rating_list:
 				c_report[rating['name']]=rating['score']
