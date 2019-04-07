@@ -449,6 +449,10 @@ def main():
 		#use the new function instead
 		conn=sqlite3.connect(args.dbpath,timeout=60)
 		todb_fast_update_requester_stats(conn, "all")
+		with conn:
+			print('committing...''')
+			conn.commit()
+			print('stats table recalculated')
 		conn.close()
 		return
 

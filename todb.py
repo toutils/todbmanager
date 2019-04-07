@@ -578,9 +578,9 @@ def todb_fast_update_requester_stats(conn, requester_ids):
 			progress+=1
 			if (progress % 10000 and total_ids>0 )==0 or progress==total_ids:
 				print(str(progress)+'/'+str(total_ids)+' complete', end="\r", flush=True)
+
 	if requester_ids=="all":
 		print()
-		print("stats table recalculated")
 
 '''
 #keep the old version for now as reference
