@@ -97,6 +97,9 @@ $python3 todbmanager.py --importdb
 to use an exported database, (the ones on the release tab are exported).
 If your using --dbpath to point to the database, use it above as well
 $python3 todbmanager.py --importdb --dbpath /path/to/database.db
+
+You only need to run this once on an export database, to rebuild
+indexes and hash data, and only if your using it with todbmanager.
 *****
 
 Doing a full scrape takes a lot of time (8-12 hours). There won't be a need
