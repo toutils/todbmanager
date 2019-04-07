@@ -386,7 +386,7 @@ def main():
 		help="provide login password to bypass prompt" )
 
 	parser.add_argument("--timeout", type=float, default=60,
-		help="request timeout, defualt: 60" )
+		help="request timeout, default: 60" )
 
 	parser.add_argument("--maxretry", type=int, default=30,
 		help="maximum number of retries after a failed request" )
